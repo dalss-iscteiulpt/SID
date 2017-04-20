@@ -47,6 +47,7 @@ public class AppSensor implements MqttCallback{
 	 * @param clientId			Id do cliente que se vai ligar, tem que ser sempre diferente
 	 * @param topic				Topico a que o cliente se vai subscrever
 	 * @param nomeSensor		Nome do sensor IN/OUT
+	 * @param exportEngine 		Exportador mongoDB -> Sybase
 	 *
 	 */
 	public AppSensor(String broker, String clientId, String topic, String nomeSensor, ExportaMongoToSybase exportEngine) { 
