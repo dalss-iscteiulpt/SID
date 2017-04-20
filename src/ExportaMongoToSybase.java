@@ -44,7 +44,7 @@ public class ExportaMongoToSybase {
 	 * e irá colocar cada entrada num detector de erros que depois irá encaminha para um procedimento 
 	 * que colocará a entrada no sybase
 	 */
-	public void exportacao() throws InterruptedException{
+	public void start() throws InterruptedException{
 		while(true){
 			if(fatalError){
 				System.out.println("Fatal Error. Closing.");

@@ -64,14 +64,15 @@ public class AppSensor implements MqttCallback{
 	 * @throws MqttException 
 	 */
 	public void start() throws MqttException{
+		mongoClient = new MongoClient("localhost",27017);
+		database = mongoClient.getDatabase("SensorLog");
+		collection = database.getCollection("SensorLogColl");
+		
 		client = new MqttClient(broker, clientId, persistence);
 		client.connect();
 		client.setCallback(this);
 		client.subscribe(topic);
 		
-		mongoClient = new MongoClient("localhost",27017);
-		database = mongoClient.getDatabase("SensorLog");
-		collection = database.getCollection("SensorLogColl");
 		System.out.println("Conexões iniciadas correctamente ClientID: "+clientId);
 		
 	}
@@ -129,7 +130,7 @@ public class AppSensor implements MqttCallback{
 		AppSensor senOUT = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientOUT_69178", "iscte_sid_2016_S2", "OUT", exporter);	
 		senOUT.start();
 		senIN.start();
-		exporter.exportacao();
+		exporter.start();
 
 		
 	}
