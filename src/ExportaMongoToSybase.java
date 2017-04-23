@@ -144,10 +144,4 @@ public class ExportaMongoToSybase {
 		mongoClient.close();
 		System.out.println("Conexões fechadas");
 	}
-	
-//	public static void main(String[] args) throws SQLException, InterruptedException {
-//		
-//		exp.exportacao();
-//		
-//	}
 }
