@@ -33,7 +33,7 @@ public class Sensor {
 		if(sensorInOut != null && sensorInOut.equals("IN")){
 			query = "insert into RegistoPassagem (Eve_numeroEvento,hora,sensor) "
 				+ "VALUES ((select numeroEvento from Evento where designacaoEvento = '"+evento+"'),"
-				+ "'"+datapassagem+"T"+horapassagem+"',"
+				+ "now()," //'"+datapassagem+"T"+horapassagem+"'
 				+ "'I')";
 		} if(sensorInOut != null && sensorInOut.equals("OUT")) {
 			query = "insert into RegistoPassagem (Eve_numeroEvento,hora,sensor) "
@@ -42,7 +42,6 @@ public class Sensor {
 					+ "'O')";
 
 		}
-		System.out.println(query);
 		return query;
 	}
 }

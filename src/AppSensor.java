@@ -175,6 +175,5 @@ public class AppSensor implements MqttCallback{
 		mongoClient.close();
 	}
 	
-//{"datapassagem" : "2013-10-15", "horapassagem" : "10:12", "evento" : "Festa ISCTE" }
 
 }

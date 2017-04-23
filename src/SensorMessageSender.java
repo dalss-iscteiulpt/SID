@@ -6,7 +6,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 public class SensorMessageSender {
 
-	static private int NUMBER_OF_MESSAGES = 1;
+	static private int NUMBER_OF_MESSAGES = 20;
 	
 	private MqttClient client;
 	private String topic;
@@ -38,7 +38,10 @@ public class SensorMessageSender {
 	private void burstMessage() throws MqttPersistenceException, MqttException{
 		System.out.println(messageToSend);
 		for(int i = 0; i < NUMBER_OF_MESSAGES; i++){
-		client.publish(topic, new MqttMessage(messageToSend.getBytes()));
+			MqttMessage message = new MqttMessage(messageToSend.getBytes());
+			message.setQos(qos);
+	    	message.setRetained(false);
+			client.publish(topic, message);
 		}
 	}
 	

@@ -42,8 +42,9 @@ public class MongoToSyabaseExporter implements Runnable{
 
 	/**
 	 * Starts the exporter
+	 * @throws InterruptedException 
 	 */
-	public MongoToSyabaseExporter(){
+	public MongoToSyabaseExporter() throws InterruptedException{
 		connectToMongo();
 		connectToSybase();
 		dispatcher = Executors.newSingleThreadExecutor();
@@ -59,8 +60,9 @@ public class MongoToSyabaseExporter implements Runnable{
 
 	/**
 	 * Tries to connect to sybase. Repeats 5  times if connection fails.
+	 * @throws InterruptedException 
 	 */
-	public void connectToSybase(){
+	public void connectToSybase() throws InterruptedException{
 
 		int connectRetries = 0;
 
@@ -70,6 +72,7 @@ public class MongoToSyabaseExporter implements Runnable{
 				System.out.println("Connected to Sybase");
 				break;
 			} catch (SQLException e) {
+				Thread.sleep(5000);
 				System.out.println("Couldn't connect to Sybase. Reconnecting.");
 				connectRetries++;
 			}
@@ -91,7 +94,7 @@ public class MongoToSyabaseExporter implements Runnable{
 
 
 
-	public void processSensorInformation(Document item) {
+	public void processSensorInformation(Document item) throws InterruptedException, SQLException {
 
 		Sensor sensor = new Sensor(item.getString("datapassagem"), item.getString("horapassagem"), item.getString("evento"),item.getString("sensor"));
 
@@ -103,11 +106,8 @@ public class MongoToSyabaseExporter implements Runnable{
 				Statement sybaseStatement = sybaseConn.createStatement();
 				String sqlCommand = sensor.queryToTableSybase();
 				if(sqlCommand != ""){
-					try {
-						Integer result = new Integer(sybaseStatement.executeUpdate(sqlCommand));
-					} catch (SQLException e) {
-						System.out.println("Error running sql sentence.");
-					}
+					Integer result = new Integer(sybaseStatement.executeUpdate(sqlCommand));
+					System.out.println("Sent");
 				}
 			}catch(SQLException e2){
 				connectToSybase();
@@ -127,12 +127,23 @@ public class MongoToSyabaseExporter implements Runnable{
 	@Override
 	public void run() {
 		FindIterable<Document> search = collection.find();
-		MongoCursor<Document> cursor = search.iterator();
-
-		System.out.println("Aqui!");
+//		MongoCursor<Document> cursor = search.iterator();
 
 		for (Document item : search) {
-			processSensorInformation(item);	
+				try {
+					processSensorInformation(item);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				} catch (SQLException sqlE) {
+					System.out.println("Sybase Error");
+					try {
+						connectToSybase();
+						executeExport();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			
 		}
 	}
 
