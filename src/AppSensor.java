@@ -1,6 +1,8 @@
 import java.sql.SQLException;
 import java.util.Vector;
 
+import javax.swing.plaf.synth.SynthSeparatorUI;
+
 import org.bson.Document;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -16,124 +18,159 @@ import com.mongodb.client.MongoDatabase;
 
 public class AppSensor implements MqttCallback{
 	
+	
 	/**
-	 * 
+	 * To connect to/manage MQTT server
 	 */
-	private MemoryPersistence persistence = new MemoryPersistence();
-	/**
-	 * Cliente do broker Mosquitto e atributos necessários para conectar ao servidor.
-	 */
-	private MqttClient client; 
-	private String topic;       
+	
+	//object that provides the services
+	private MqttClient client;
+	//topic to subscribe
+	private String topic;
+	//quality of the service (0, not reliable; 1, retries once; 2, keeps trying until)
 	private int qos = 0;
-	private String broker;      
-	private String clientId;    
+	//server's address
+	private String mqttAdress;
+	//id to identify the client that is connecting
+	private String clientId;
+	
+    
 	/**
-	 * Cliente da driver java do mongoDB para se ligar a BD.
+	 * To connect to/manage MongoDB
 	 */
 	private MongoClient mongoClient;
-	MongoDatabase database;
-	MongoCollection<Document> collection;
-	/**
-	 * Nome do sensor IN/OUT
-	 */
-	private String nomeSensor;
+	private MongoDatabase database;
+	private MongoCollection<Document> collection;
 	
-	private ExportaMongoToSybase exportEngine;
+	/**
+	 * AppSensor configurations 
+	 */
+	private int MAX_RECONNECT_ATTEMPTS = 5;
+	
+	private String sensorName;
+	private boolean connectedToMQTT;
+	private boolean connectedToMongoDB;
+	
+	/**
+	 * Provides the services and performs the migration between mongo and sybase
+	 */
+	
+	private MongoToSyabaseExporter exportEngine;
 	
 	/**
 	 * 
-	 * @param broker 			Ligação tcp que liga ao paho
+	 * @param mqttAdress 			Ligação tcp que liga ao paho
 	 * @param clientId			Id do cliente que se vai ligar, tem que ser sempre diferente
 	 * @param topic				Topico a que o cliente se vai subscrever
 	 * @param nomeSensor		Nome do sensor IN/OUT
 	 * @param exportEngine 		Exportador mongoDB -> Sybase
 	 *
 	 */
-	public AppSensor(String broker, String clientId, String topic, String nomeSensor, ExportaMongoToSybase exportEngine) { 
-		this.broker=broker;
+	public AppSensor(String mqttAddress, String clientId, String topic, String nomeSensor, MongoToSyabaseExporter exportEngine) { 
+		this.mqttAdress=mqttAddress;
 		this.clientId=clientId;
 		this.topic=topic;
-		this.nomeSensor=nomeSensor;
+		this.sensorName=nomeSensor;
 		this.exportEngine=exportEngine;
+	}
+	
+	
+	
+	/**
+	 *  Connects to MongoDB and MQTT.  
+	 */
+	public void start() {
+		//Number of connection attempts
+		int connectRetries = 0;
 		
+		connectToMongo();
+		
+		while (connectRetries < MAX_RECONNECT_ATTEMPTS){
+			try {
+				connectToMQTT();
+				break;
+			} catch (MqttException e1) {
+				System.out.println("Problem with the connection. Trying to reconnect.");
+				connectRetries++;
+			}	
+		}
+		System.out.println("Connected correctly. MQTT clientID: "+clientId);		
 	}
 	
 	/**
-	 *  Inicia as conexões do broker Mosquitto e a ligação ao mongoDB.
-	 * @throws MqttException 
+	 * Sets the connection to mongoDB
 	 */
-	public void start() throws MqttException{
+	private void connectToMongo(){
 		mongoClient = new MongoClient("localhost",27017);
 		database = mongoClient.getDatabase("SensorLog");
 		collection = database.getCollection("SensorLogColl");
-		
-		client = new MqttClient(broker, clientId, persistence);
+	}
+	
+	/**
+	 * Sets the connection to MQTT
+	 * @throws MqttException
+	 */
+	private void connectToMQTT() throws MqttException{
+		client = new MqttClient(mqttAdress, clientId, new MemoryPersistence());
 		client.connect();
 		client.setCallback(this);
 		client.subscribe(topic);
-		
-		System.out.println("Conexões iniciadas correctamente ClientID: "+clientId);
-		
 	}
 
+	/**
+	 * Mandatory by the MqttCallback Interface. Not used.   
+	 */
 	@Override
 	public void connectionLost(Throwable cause) { 
 		System.out.println(cause);
 	}
 	
 	/**
-	 * Quando uma mensagem chega do Mosquitto Broker, este irá buscar a base de dados mongoDB
-	 * necessária e a colecção e depois através do procedimento insertMessageToMongoDB(message,collection)
-	 * irá colocar a mensagem na colecção do mongoDB.
+	 * Method called each time a message arrives. The message is then inserted into MongoDB. 
+	 * Note: The client needs to have subscribed to a topic first.
 	 */
 	@Override
 	public void messageArrived(String topic, MqttMessage message) throws Exception {
 		try{
-	        insertMessageToMongoDB(message);
+	        insertIntoMongoDB(message);
 		}catch(Exception e){
 	         System.err.println( e.getClass().getName() + ": " + e.getMessage() );
 	      }
 	}
 	/**
-	 *Aqui o procedimento recebe uma mensagem Mqtt e a colecção da BD mongoDB onde irá colocar 
-	 *essa mensagem. O procedimento passa a mensagem para um String, e nesse String irá colocar todos 
-	 *os " para ' de forma a criar o formato JSON para ser feito o parsing pela driver java do
-	 *MongoDB. Após ser feito o parsing a mensagem é colocada na colecção do mongoDB.
+	 *Changes the format of the message to JSON and adds the type of the sensor to the end of the message.
+	 *The message is added to MongoDB.
+	 *Note: The type of the sensor is related to the topic subscribed on the MQTT server. Each of the sensors subscribes a different topic.
 	 */
-	public void insertMessageToMongoDB(MqttMessage message){
+	public void insertIntoMongoDB(MqttMessage message){
 		String messageString = message.toString();
         messageString = messageString.replaceAll("\"","'");
         messageString = messageString.substring(0, messageString.length() - 1);
-        if(nomeSensor.equals("IN")){
+        if(sensorName.equals("IN")){
         	messageString += (", 'sensor' : 'IN' }");
-        } else if(nomeSensor.equals("OUT")){
+        } else if(sensorName.equals("OUT")){
         	messageString += (", 'sensor' : 'OUT' }");
         }
-        Document dbObject = Document.parse(messageString);
-        collection.insertOne(dbObject);
-        notifyEngine();
+        
+        	Document dbObject = Document.parse(messageString);
+            collection.insertOne(dbObject);
+            exportEngine.executeExport();
 	}
 	
-	public void notifyEngine(){
-		exportEngine.notifyExport();
-	}
 	
+	/**
+	 * Mandatory by the MqttCallback Interface. Not used.   
+	 */
 	@Override
 	public void deliveryComplete(IMqttDeliveryToken token) {
 	}
 	
-
-	public static void main(String[] args) throws MqttException, InterruptedException, SQLException {
-		ExportaMongoToSybase exporter = new ExportaMongoToSybase();
-		AppSensor senIN  = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientIN_69178", "iscte_sid_2016_S1", "IN", exporter);
-		AppSensor senOUT = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientOUT_69178", "iscte_sid_2016_S2", "OUT", exporter);	
-		senOUT.start();
-		senIN.start();
-		exporter.start();
-
-		
+	public void closeConnections() throws MqttException{
+		client.disconnect();
+		client.close();
+		mongoClient.close();
 	}
+	
 //{"datapassagem" : "2013-10-15", "horapassagem" : "10:12", "evento" : "Festa ISCTE" }
 
 }

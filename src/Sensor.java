@@ -29,19 +29,20 @@ public class Sensor {
 	}
 	
 	public String queryToTableSybase(){
-		String query = new String();
-		if(sensorInOut.equals("IN")){
+		String query = new String("");
+		if(sensorInOut != null && sensorInOut.equals("IN")){
 			query = "insert into RegistoPassagem (Eve_numeroEvento,hora,sensor) "
 				+ "VALUES ((select numeroEvento from Evento where designacaoEvento = '"+evento+"'),"
 				+ "'"+datapassagem+"T"+horapassagem+"',"
 				+ "'I')";
-		} if(sensorInOut.equals("OUT")) {
+		} if(sensorInOut != null && sensorInOut.equals("OUT")) {
 			query = "insert into RegistoPassagem (Eve_numeroEvento,hora,sensor) "
 					+ "VALUES ((select numeroEvento from Evento where designacaoEvento = '"+evento+"'),"
 					+ "'"+datapassagem+"T"+horapassagem+"',"
 					+ "'O')";
 
 		}
+		System.out.println(query);
 		return query;
 	}
 }

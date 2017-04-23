@@ -3,7 +3,10 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import javax.swing.plaf.synth.SynthSeparatorUI;
 import javax.xml.ws.FaultAction;
 
 import org.bson.Document;
@@ -16,129 +19,128 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 
 
-public class ExportaMongoToSybase {
-	private Statement sybaseStatement;
+public class MongoToSyabaseExporter implements Runnable{
+
+	//Sybase stuff
 	private Connection sybaseConn;
+
+	private String SYBASE_DATABASE="EventosDB";
+	private String SYBASE_USER = "dba";
+	private String SYBASE_PASSWORD = "sql";
+
+	//MongoDB stuff
 	private MongoClient mongoClient;
 	private MongoDatabase database;
 	private MongoCollection<Document> collection;
-	private boolean fatalError=false;
-	
-	/** 
-	 * @throws SQLException 
-	 * Inicializa as conexões ao sybase e ao mongoDB.
+
+
+	// Number of maximum reconnects
+	private int MAX_RECONNECT_ATTEMPTS = 5;
+
+	// Thread that will perform each export request
+	private ExecutorService dispatcher;
+
+	/**
+	 * Starts the exporter
 	 */
-	public ExportaMongoToSybase() throws SQLException{
-		sybaseConn = DriverManager.getConnection("jdbc:sqlanywhere:uid=dba;pwd=sql;eng=EventosDB");
+	public MongoToSyabaseExporter(){
+		connectToMongo();
+		connectToSybase();
+		dispatcher = Executors.newSingleThreadExecutor();
+	}
+
+
+
+	public void connectToMongo(){
 		mongoClient = new MongoClient("localhost",27017);
 		database = mongoClient.getDatabase("SensorLog");
 		collection = database.getCollection("SensorLogColl");
-		System.out.println("Exportador Inicializado");
 	}
-	
-	/**
-	 * @param nome
-	 * @throws InterruptedException 
-	 * @throws SQLException
-	 * A partir da ligação ao mongoDB iniciada no construtor irá buscar todos as entrada e 
-	 * e irá colocar cada entrada num detector de erros que depois irá encaminha para um procedimento 
-	 * que colocará a entrada no sybase
-	 */
-	public void start() throws InterruptedException{
-		while(true){
-			if(fatalError){
-				System.out.println("Fatal Error. Closing.");
-				return;
-			}
-			FindIterable<Document> search = collection.find();
-			MongoCursor<Document> cursor = search.iterator();
-			if(cursor.hasNext()){
-				for (Document current : search) {
-					errorDetector(current);
-				}
-			} else {
-				waitSensor();
-			}
-		}
-	}
-	
-	public synchronized void waitSensor() throws InterruptedException{
-		wait();
-		System.out.println("Boop");
-	}
-	
-	/**
-	 * Chamado no AppSensor quando é recebida uma mensagem.
-	 */
-	public synchronized void notifyExport(){
-		notifyAll();
-	}
-	
 
-	
 	/**
-	 * @param entry
-	 * 
-	 * Caso o sybase lançe uma excepeção o programa vai tentar reconectar durante 20 segundos e depois, caso 
-	 * não consiga desliga.Em caso de erro nenhum dado se perderá porque estes estão guardados na mongoDB.
-	 * 
+	 * Tries to connect to sybase. Repeats 5  times if connection fails.
 	 */
-	
-	public void errorDetector(Document entry){
-		try {
-			createSensorObjectToSybase(entry);
-		} catch (SQLException excp){
-			int retry = 4;
-			while(retry != 0){
-				try{
-				System.out.println("Error: Attempting connection to Sybase ("+retry+")");
-				sybaseConn = DriverManager.getConnection("jdbc:sqlanywhere:uid=dba;pwd=sql;eng=EventosDB");
-				return;
-				} catch (SQLException badConn){
-					try {
-						Thread.sleep(5000);
-						retry--;
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
+	public void connectToSybase(){
+
+		int connectRetries = 0;
+
+		while(connectRetries < MAX_RECONNECT_ATTEMPTS){
+			try {
+				sybaseConn = DriverManager.getConnection("jdbc:sqlanywhere:uid="+SYBASE_USER+";pwd="+SYBASE_PASSWORD+";eng="+SYBASE_DATABASE);
+				System.out.println("Connected to Sybase");
+				break;
+			} catch (SQLException e) {
+				System.out.println("Couldn't connect to Sybase. Reconnecting.");
+				connectRetries++;
 			}
-			fatalError=true;
-			return;
 		}
 	}
+
 	/**
-	 * @param entrada
-	 * @param nome
+	 * Shuts down 
 	 * @throws SQLException
-	 * Baseado no documento que receber da exportacao do mongoDB irá criar um novo 
-	 * objecto Sensor. Esse objecto sensor irá enviar um string dependendo do tipo de sensor
-	 * que com a classe Statement irá criar um query capaz de colocar os dados no sybase.
-	 * Apos a entrada ter sido colocada no sybase a entrada será apagada da base de dados
-	 * mongo de forma a confirmar o envio.
-	 */
-	public void createSensorObjectToSybase(Document entrada) throws SQLException{
-		Sensor sensor_tmp = new Sensor(entrada.getString("datapassagem"), entrada.getString("horapassagem"), entrada.getString("evento"),entrada.getString("sensor"));
-		sybaseStatement = sybaseConn.createStatement();
-		String sqlCommand = sensor_tmp.queryToTableSybase();
-		Integer result = new Integer(sybaseStatement.executeUpdate(sqlCommand));
-		System.out.println("Data Sent");
-		collection.deleteOne(new Document("_id", new ObjectId(entrada.get("_id").toString())));
-	}
-	
-	/**
-	 * @throws SQLException
-	 * Desliga as conexoes ao sybase e mongoDB
 	 */
 	public void closeConnections() throws SQLException{
+		dispatcher.shutdown();
 		sybaseConn.close();
 		mongoClient.close();
+
 		System.out.println("Conexões fechadas");
 	}
-	
-//	public static void main(String[] args) throws SQLException, InterruptedException {
-//		
-//		exp.exportacao();
-//		
-//	}
+
+
+
+
+	public void processSensorInformation(Document item) {
+
+		Sensor sensor = new Sensor(item.getString("datapassagem"), item.getString("horapassagem"), item.getString("evento"),item.getString("sensor"));
+
+		//Repeats if the connection was not possible
+		boolean retry = false;
+
+		do{
+			try{
+				Statement sybaseStatement = sybaseConn.createStatement();
+				String sqlCommand = sensor.queryToTableSybase();
+				if(sqlCommand != ""){
+					try {
+						Integer result = new Integer(sybaseStatement.executeUpdate(sqlCommand));
+					} catch (SQLException e) {
+						System.out.println("Error running sql sentence.");
+					}
+				}
+			}catch(SQLException e2){
+				connectToSybase();
+				retry = true;
+			}
+			retry = true;
+		} while (!retry);
+
+		//Delete item from mongoDB
+		collection.deleteOne(new Document("_id", new ObjectId(item.get("_id").toString())));
+	}
+
+
+	/**
+	 * Task to be performed
+	 */
+	@Override
+	public void run() {
+		FindIterable<Document> search = collection.find();
+		MongoCursor<Document> cursor = search.iterator();
+
+		System.out.println("Aqui!");
+
+		for (Document item : search) {
+			processSensorInformation(item);	
+		}
+	}
+
+	/**
+	 * Schedules a task to perform
+	 */
+	public void executeExport(){
+		dispatcher.submit(this);
+	}
+
 }
