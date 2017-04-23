@@ -35,10 +35,14 @@ public class MongoToSyabaseExporter implements Runnable{
 
 
 	// Number of maximum reconnects
-	private int MAX_RECONNECT_ATTEMPTS = 5;
+	private int MAX_RECONNECT_ATTEMPTS = 20;
+	
+	// Number of maximum pull attempts
+	private int MAX_PULL_ATTEMPTS = 2;
 
 	// Thread that will perform each export request
 	private ExecutorService dispatcher;
+
 
 	/**
 	 * Starts the exporter
@@ -110,6 +114,7 @@ public class MongoToSyabaseExporter implements Runnable{
 					System.out.println("Sent");
 				}
 			}catch(SQLException e2){
+				System.out.println("Format or Statement Problem.");
 				connectToSybase();
 				retry = true;
 			}
@@ -127,9 +132,10 @@ public class MongoToSyabaseExporter implements Runnable{
 	@Override
 	public void run() {
 		FindIterable<Document> search = collection.find();
-//		MongoCursor<Document> cursor = search.iterator();
 
-		for (Document item : search) {
+		int nrRetries=0;
+		while(nrRetries  < MAX_PULL_ATTEMPTS){
+			for (Document item : search) {
 				try {
 					processSensorInformation(item);
 				} catch (InterruptedException e) {
@@ -138,12 +144,12 @@ public class MongoToSyabaseExporter implements Runnable{
 					System.out.println("Sybase Error");
 					try {
 						connectToSybase();
-						executeExport();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
-			
+
+			}
 		}
 	}
 
