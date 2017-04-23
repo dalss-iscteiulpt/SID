@@ -36,7 +36,7 @@ public class MongoToSyabaseExporter implements Runnable{
 
 	// Number of maximum reconnects
 	private int MAX_RECONNECT_ATTEMPTS = 20;
-	
+
 	// Number of maximum pull attempts
 	private int MAX_PULL_ATTEMPTS = 2;
 
@@ -95,31 +95,21 @@ public class MongoToSyabaseExporter implements Runnable{
 		System.out.println("Conexões fechadas");
 	}
 
-
-
-
-	public void processSensorInformation(Document item) throws InterruptedException, SQLException {
+	public void processSensorInformation(Document item) throws SQLException {
 
 		Sensor sensor = new Sensor(item.getString("datapassagem"), item.getString("horapassagem"), item.getString("evento"),item.getString("sensor"));
 
-		//Repeats if the connection was not possible
-		boolean retry = false;
-
-		do{
-			try{
-				Statement sybaseStatement = sybaseConn.createStatement();
-				String sqlCommand = sensor.queryToTableSybase();
-				if(sqlCommand != ""){
-					Integer result = new Integer(sybaseStatement.executeUpdate(sqlCommand));
-					System.out.println("Sent");
-				}
-			}catch(SQLException e2){
-				System.out.println("Format or Statement Problem.");
-				connectToSybase();
-				retry = true;
+		Statement sybaseStatement = sybaseConn.createStatement();
+		String sqlCommand = sensor.queryToTableSybase();
+		try{
+			if(sqlCommand != ""){
+				Integer result = new Integer(sybaseStatement.executeUpdate(sqlCommand));
+				System.out.println("Sent");
 			}
-			retry = true;
-		} while (!retry);
+		}catch(NullPointerException e1){
+			System.out.println("Wrong format.");
+		}
+
 
 		//Delete item from mongoDB
 		collection.deleteOne(new Document("_id", new ObjectId(item.get("_id").toString())));
@@ -134,23 +124,23 @@ public class MongoToSyabaseExporter implements Runnable{
 		FindIterable<Document> search = collection.find();
 
 		int nrRetries=0;
-		while(nrRetries  < MAX_PULL_ATTEMPTS){
-			for (Document item : search) {
-				try {
-					processSensorInformation(item);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				} catch (SQLException sqlE) {
-					System.out.println("Sybase Error");
+		while(nrRetries  < MAX_PULL_ATTEMPTS){	
+			try{
+				for (Document item : search) {
+					processSensorInformation(item);	
+				} 
+				break;
+			}catch (SQLException sqlE) {
 					try {
+						System.out.println("Sybase Error. Trying to reconnect");
 						connectToSybase();
+						nrRetries++;
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
 
 			}
-		}
 	}
 
 	/**

@@ -10,9 +10,9 @@ public class SensorTester {
 	
 	public static void main(String[] args) throws MqttException, InterruptedException, SQLException {
 		MongoToSyabaseExporter exporter = new MongoToSyabaseExporter();
-		AppSensor senIN  = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientIN_69178", "iscte_sid_2016_S1", "IN", exporter);
-		AppSensor senOUT = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientOUT_69178", "iscte_sid_2016_S2", "OUT", exporter);	
-		senOUT.start();
+		AppSensor senIN  = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientIN_69152", "iscte_sid_2016_S3", "IN", exporter);
+//		AppSensor senOUT = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientOUT_69152", "iscte_sid_2016_S2", "OUT", exporter);	
+//		senOUT.start();
 		senIN.start();
 		
 		boolean stop = false;
@@ -25,7 +25,7 @@ public class SensorTester {
 		     }
 		}
 		
-		senOUT.closeConnections();
+//		senOUT.closeConnections();
 		senIN.closeConnections();
 		exporter.closeConnections();
 		
