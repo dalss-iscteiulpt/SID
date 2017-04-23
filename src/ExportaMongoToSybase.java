@@ -86,7 +86,9 @@ public class ExportaMongoToSybase {
 	
 	public void errorDetector(Document entry){
 		try {
-			createSensorObjectToSybase(entry);
+
+				createSensorObjectToSybase(entry);
+			
 		} catch (SQLException excp){
 			int retry = 4;
 			while(retry != 0){
@@ -118,17 +120,18 @@ public class ExportaMongoToSybase {
 	 * mongo de forma a confirmar o envio.
 	 */
 	public void createSensorObjectToSybase(Document entrada) throws SQLException{
-		Sensor sensor_tmp = new Sensor(entrada.getString("datapassagem"), entrada.getString("horapassagem"), entrada.getString("evento"),entrada.getString("sensor"));
-		
-		try{
-		sybaseStatement = sybaseConn.createStatement();
-		String sqlCommand = sensor_tmp.queryToTableSybase();
-		Integer result = new Integer(sybaseStatement.executeUpdate(sqlCommand));
-		}catch(SQLException e2){
-			System.out.println("Format or Statement Problem.");
+		try {
+			Sensor sensor_tmp = new Sensor(entrada.getString("datapassagem"), entrada.getString("horapassagem"), entrada.getString("evento"),entrada.getString("sensor"));
+			sybaseStatement = sybaseConn.createStatement();
+			String sqlCommand = sensor_tmp.queryToTableSybase();
+			Integer result = new Integer(sybaseStatement.executeUpdate(sqlCommand));
+			System.out.println("Data Sent");
+		} catch (NullPointerException nullExp){
+			System.out.println("Wrong Format");
 		}
-		System.out.println("Data Sent");
 		collection.deleteOne(new Document("_id", new ObjectId(entrada.get("_id").toString())));
+
+
 	}
 	
 	
