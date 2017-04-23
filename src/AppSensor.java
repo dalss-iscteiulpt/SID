@@ -126,8 +126,8 @@ public class AppSensor implements MqttCallback{
 
 	public static void main(String[] args) throws MqttException, InterruptedException, SQLException {
 		ExportaMongoToSybase exporter = new ExportaMongoToSybase();
-		AppSensor senIN  = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientIN_69178", "iscte_sid_2016_S1", "IN", exporter);
-		AppSensor senOUT = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientOUT_69178", "iscte_sid_2016_S2", "OUT", exporter);	
+		AppSensor senIN  = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientIN_69178", "iscte_sid_2016_S1_6", "IN", exporter);
+		AppSensor senOUT = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientOUT_69178", "iscte_sid_2016_S2_6", "OUT", exporter);	
 		senOUT.start();
 		senIN.start();
 		exporter.start();
