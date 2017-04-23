@@ -90,7 +90,7 @@ public class ExportaMongoToSybase {
 				createSensorObjectToSybase(entry);
 			
 		} catch (SQLException excp){
-			int retry = 4;
+			int retry = 100;
 			while(retry != 0){
 				try{
 				System.out.println("Error: Attempting connection to Sybase ("+retry+")");
