@@ -165,6 +165,10 @@ public class AppSensor implements MqttCallback{
 	public void deliveryComplete(IMqttDeliveryToken token) {
 	}
 	
+	/**
+	 * Closes all connections.
+	 * @throws MqttException
+	 */
 	public void closeConnections() throws MqttException{
 		client.disconnect();
 		client.close();

@@ -48,8 +48,8 @@ public class SensorMessageSender {
 	
 	public static void main(String[] args) throws MqttException, InterruptedException {
 		
-		SensorMessageSender burstIN = new SensorMessageSender("tcp://iot.eclipse.org:1883", "eclipseClientIN_69178", "iscte_sid_2016_S1", " \"{\"datapassagem\" : \"2017-10-18\", \"horapassagem\" : \"20:12\", \"evento\" : \"Festa ISCTE\" }");
-		SensorMessageSender burstOUT = new SensorMessageSender("tcp://iot.eclipse.org:1883", "eclipseClientIN_69178", "iscte_sid_2016_S2", " \"{\"datapassagem\" : \"2016-10-18\", \"horapassagem\" : \"20:12\", \"evento\" : \"Festa ISCTE\" }");
+		SensorMessageSender burstIN = new SensorMessageSender("tcp://iot.eclipse.org:1883", "eclipseClientINBurst_69178", "iscte_sid_2016_S1", " \"{\"datapassagem\" : \"2017-10-18\", \"horapassagem\" : \"20:12\", \"evento\" : \"Festa ISCTE\" }");
+		SensorMessageSender burstOUT = new SensorMessageSender("tcp://iot.eclipse.org:1883", "eclipseClientINBurst_69178", "iscte_sid_2016_S2", " \"{\"datapassagem\" : \"2016-10-18\", \"horapassagem\" : \"20:12\", \"evento\" : \"Festa ISCTE\" }");
 		
 		System.out.println(burstIN.connected());
 		
