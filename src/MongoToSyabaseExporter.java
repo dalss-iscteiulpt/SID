@@ -55,7 +55,6 @@ public class MongoToSyabaseExporter implements Runnable{
 	}
 
 
-
 	public void connectToMongo(){
 		mongoClient = new MongoClient("localhost",27017);
 		database = mongoClient.getDatabase("SensorLog");
