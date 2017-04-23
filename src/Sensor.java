@@ -3,7 +3,7 @@ public class Sensor {
 	private String datapassagem = new String();
 	private String horapassagem = new String();
 	private String evento = new String();
-	public String sensorInOut = new String();
+	private String sensorInOut = new String();
 	
 	public Sensor(String datapassagem, String horapassagem, String evento, String sensorInOut) {
 		this.evento=evento;
