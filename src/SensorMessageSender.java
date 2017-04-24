@@ -1,3 +1,9 @@
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -6,22 +12,20 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 public class SensorMessageSender {
 
-	static private int NUMBER_OF_MESSAGES = 20;
+	static private int NUMBER_OF_MESSAGES = 10;
 	
 	private MqttClient client;
 	private String topic;
 	private int qos = 0;
 	private String mqttAdress;
 	private String clientId;
-
-	private String messageToSend;
 	
 
-	public SensorMessageSender(String mqttAddress, String clientId, String topic, String messageToSend) { 
+	public SensorMessageSender(String mqttAddress, String clientId, String topic) { 
 		this.mqttAdress=mqttAddress;
 		this.clientId=clientId;
 		this.topic=topic;
-		this.messageToSend = messageToSend;
+
 		connectToMQTT();
 	}
 	
@@ -35,9 +39,11 @@ public class SensorMessageSender {
 		}	
 	}
 	
-	private void burstMessage() throws MqttPersistenceException, MqttException{
-		System.out.println(messageToSend);
+	void burstMessage() throws MqttPersistenceException, MqttException{
 		for(int i = 0; i < NUMBER_OF_MESSAGES; i++){
+			Date dNow = new Date( );
+		    SimpleDateFormat ft = new SimpleDateFormat ("hh:mm:ss:SSS");
+			String messageToSend= "{\"datapassagem\" : \"2017-04-23\", \"horapassagem\" : \""+ft.format(dNow).toString()+"\", \"evento\" : \"Festa ISCTE\" }";
 			MqttMessage message = new MqttMessage(messageToSend.getBytes());
 			message.setQos(qos);
 	    	message.setRetained(false);
@@ -49,16 +55,16 @@ public class SensorMessageSender {
 		return client.isConnected();
 	}
 	
-	public static void main(String[] args) throws MqttException, InterruptedException {
-		
-		SensorMessageSender burstIN = new SensorMessageSender("tcp://iot.eclipse.org:1883", "eclipseClientINBurst_69178", "iscte_sid_2016_S1", " \"{\"datapassagem\" : \"2017-10-18\", \"horapassagem\" : \"20:12\", \"evento\" : \"Festa ISCTE\" }");
-		SensorMessageSender burstOUT = new SensorMessageSender("tcp://iot.eclipse.org:1883", "eclipseClientINBurst_69178", "iscte_sid_2016_S2", " \"{\"datapassagem\" : \"2016-10-18\", \"horapassagem\" : \"20:12\", \"evento\" : \"Festa ISCTE\" }");
-		
-		System.out.println(burstIN.connected());
-		
-		burstIN.burstMessage();
-		Thread.sleep(10000);
-		burstOUT.burstMessage();
+	public static void main(String[] args) throws MqttException, InterruptedException, BrokenBarrierException {
+		final CyclicBarrier gate = new CyclicBarrier(5);
+		for(int i=0;i < 10; i++){
+			ThreadTester t = new ThreadTester();
+			t.setId(i+100);
+			t.start();
+			System.out.println(i);
+		}
+		gate.await();
+
 
 	}
 }

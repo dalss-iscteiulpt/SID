@@ -1,6 +1,6 @@
 /AppSensor.class
-/MongoToSyabaseExporter.class
+/ExportToSybase.class
 /Sensor.class
 /SensorMessageSender.class
 /SensorTester.class
-/ExportToSybase.class
+/ThreadTester.class

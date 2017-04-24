@@ -2,12 +2,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.LinkedList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import javax.swing.plaf.synth.SynthSeparatorUI;
-import javax.xml.ws.FaultAction;
 
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -15,7 +11,6 @@ import org.bson.types.ObjectId;
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 
 
@@ -75,8 +70,8 @@ public class ExportToSybase implements Runnable{
 				System.out.println("Connected to Sybase");
 				break;
 			} catch (SQLException e) {
-				System.out.println("Couldn't connect to Sybase. Reconnecting.");
 				Thread.sleep(5000);
+				System.out.println("Couldn't connect to Sybase. Reconnecting.");
 				connectRetries++;
 			}
 		}

@@ -1,8 +1,3 @@
-import java.sql.SQLException;
-import java.util.Vector;
-
-import javax.swing.plaf.synth.SynthSeparatorUI;
-
 import org.bson.Document;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
