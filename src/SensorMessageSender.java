@@ -56,8 +56,9 @@ public class SensorMessageSender {
 	}
 	
 	public static void main(String[] args) throws MqttException, InterruptedException, BrokenBarrierException {
-		final CyclicBarrier gate = new CyclicBarrier(5);
-		for(int i=0;i < 10; i++){
+		int NUMERO_THREADS=5;
+		final CyclicBarrier gate = new CyclicBarrier(NUMERO_THREADS);
+		for(int i=0; i < NUMERO_THREADS; i++){
 			ThreadTester t = new ThreadTester();
 			t.setId(i+100);
 			t.start();
