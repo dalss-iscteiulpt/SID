@@ -19,7 +19,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 
 
-public class MongoToSyabaseExporter implements Runnable{
+public class ExportToSybase implements Runnable{
 
 	//Sybase stuff
 	private Connection sybaseConn;
@@ -48,7 +48,7 @@ public class MongoToSyabaseExporter implements Runnable{
 	 * Starts the exporter
 	 * @throws InterruptedException 
 	 */
-	public MongoToSyabaseExporter() throws InterruptedException{
+	public ExportToSybase() throws InterruptedException{
 		connectToMongo();
 		connectToSybase();
 		dispatcher = Executors.newSingleThreadExecutor();

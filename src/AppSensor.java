@@ -55,7 +55,7 @@ public class AppSensor implements MqttCallback{
 	 * Provides the services and performs the migration between mongo and sybase
 	 */
 	
-	private MongoToSyabaseExporter exportEngine;
+	private ExportToSybase exportEngine;
 	
 	/**
 	 * 
@@ -66,7 +66,7 @@ public class AppSensor implements MqttCallback{
 	 * @param exportEngine 		Exportador mongoDB -> Sybase
 	 *
 	 */
-	public AppSensor(String mqttAddress, String clientId, String topic, String nomeSensor, MongoToSyabaseExporter exportEngine) { 
+	public AppSensor(String mqttAddress, String clientId, String topic, String nomeSensor, ExportToSybase exportEngine) { 
 		this.mqttAdress=mqttAddress;
 		this.clientId=clientId;
 		this.topic=topic;
