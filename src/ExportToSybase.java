@@ -75,8 +75,8 @@ public class ExportToSybase implements Runnable{
 				System.out.println("Connected to Sybase");
 				break;
 			} catch (SQLException e) {
-				Thread.sleep(5000);
 				System.out.println("Couldn't connect to Sybase. Reconnecting.");
+				Thread.sleep(5000);
 				connectRetries++;
 			}
 		}
