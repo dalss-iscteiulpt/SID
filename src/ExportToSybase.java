@@ -47,6 +47,7 @@ public class ExportToSybase implements Runnable{
 		connectToMongo();
 		connectToSybase();
 		dispatcher = Executors.newSingleThreadExecutor();
+		executeExport();
 	}
 
 
@@ -57,7 +58,7 @@ public class ExportToSybase implements Runnable{
 	}
 
 	/**
-	 * Tries to connect to sybase. Repeats 5  times if connection fails.
+	 * Tries to connect to sybase. Repeats n times if connection fails.
 	 * @throws InterruptedException 
 	 */
 	public void connectToSybase() throws InterruptedException{
