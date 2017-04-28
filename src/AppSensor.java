@@ -1,3 +1,9 @@
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.bson.Document;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -7,6 +13,10 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import com.mongodb.MongoClient;
+import com.mongodb.MongoCommandException;
+import com.mongodb.MongoSocketOpenException;
+import com.mongodb.MongoSocketWriteException;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
@@ -29,7 +39,10 @@ public class AppSensor implements MqttCallback{
 	//id to identify the client that is connecting
 	private String clientId;
 	
-    
+//	private ArrayList<Document> waitingData = new ArrayList<>();
+	private SafeThreadList waitingData;
+
+	
 	/**
 	 * To connect to/manage MongoDB
 	 */
@@ -61,12 +74,14 @@ public class AppSensor implements MqttCallback{
 	 * @param exportEngine 		Exportador mongoDB -> Sybase
 	 *
 	 */
-	public AppSensor(String mqttAddress, String clientId, String topic, String nomeSensor, ExportToSybase exportEngine) { 
+	public AppSensor(String mqttAddress, String clientId, String topic, String nomeSensor, ExportToSybase exportEngine, SafeThreadList waitingData ) { 
 		this.mqttAdress=mqttAddress;
 		this.clientId=clientId;
 		this.topic=topic;
 		this.sensorName=nomeSensor;
 		this.exportEngine=exportEngine;
+		this.waitingData = waitingData;
+		
 	}
 	
 	
@@ -83,23 +98,30 @@ public class AppSensor implements MqttCallback{
 		while (connectRetries < MAX_RECONNECT_ATTEMPTS){
 			try {
 				connectToMQTT();
+				
 				break;
 			} catch (MqttException e1) {
 				System.out.println("Problem with the connection. Trying to reconnect.");
 				connectRetries++;
 			}	
 		}
-		System.out.println("Connected correctly. MQTT clientID: "+clientId);		
+		System.out.println("Connected correctly. MQTT clientID: "+clientId);	
 	}
 	
 	/**
 	 * Sets the connection to mongoDB
 	 */
 	private void connectToMongo(){
-		mongoClient = new MongoClient("localhost",27017);
+		mongoClient = new MongoClient(Arrays.asList(
+				   new ServerAddress("192.168.1.101", 27017),
+				   new ServerAddress("192.168.248.130", 27017),
+				   new ServerAddress("192.168.248.130", 27018)));
 		database = mongoClient.getDatabase("SensorLog");
 		collection = database.getCollection("SensorLogColl");
+		waitingData.setCollection(collection);
 	}
+	
+	
 	
 	/**
 	 * Sets the connection to MQTT
@@ -147,12 +169,27 @@ public class AppSensor implements MqttCallback{
         	messageString += (", \"sensor\" : \"OUT\" }");
         }
         
-        	Document dbObject = Document.parse(messageString);
-            collection.insertOne(dbObject);
-            exportEngine.executeExport();
+        Document dbObject = Document.parse(messageString);
+        
+        try{
+        	collection.insertOne(dbObject);
+//        	sendData();
+        } catch (MongoSocketOpenException | MongoCommandException | MongoSocketWriteException waiting){
+        	System.out.println("Doc waiting");
+        	waitingData.add(dbObject);
+        }
+        exportEngine.executeExport();
+
+       
 	}
-	
-	
+
+//	public void sendData(){
+//		if(!waitingData.getData().isEmpty()){
+//			waitingData.sendData();
+//			exportEngine.executeExport();
+//		}
+//	}
+	//	
 	/**
 	 * Mandatory by the MqttCallback Interface. Not used.   
 	 */

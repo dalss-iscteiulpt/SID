@@ -1,6 +1,2 @@
-/AppSensor.class
-/ExportToSybase.class
-/Sensor.class
-/SensorMessageSender.class
-/SensorTester.class
-/ThreadTester.class
+/SafeThreadList.class
+/MondoDBVerifier.class

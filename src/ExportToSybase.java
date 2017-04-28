@@ -2,6 +2,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -9,6 +10,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import com.mongodb.MongoClient;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -52,7 +54,10 @@ public class ExportToSybase implements Runnable{
 
 
 	public void connectToMongo(){
-		mongoClient = new MongoClient("localhost",27017);
+		mongoClient = new MongoClient(Arrays.asList(
+				   new ServerAddress("192.168.1.101", 27017),
+				   new ServerAddress("192.168.248.130", 27017),
+				   new ServerAddress("192.168.248.130", 27018)));
 		database = mongoClient.getDatabase("SensorLog");
 		collection = database.getCollection("SensorLogColl");
 	}
