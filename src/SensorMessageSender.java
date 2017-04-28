@@ -12,7 +12,8 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 public class SensorMessageSender {
 
-	static private int NUMBER_OF_MESSAGES = 10;
+	static private int NUMBER_OF_MESSAGES = 10; //5*10*2 = 100 mensagens
+	static private int NUMERO_THREADS=5;
 	
 	private MqttClient client;
 	private String topic;
@@ -56,7 +57,6 @@ public class SensorMessageSender {
 	}
 	
 	public static void main(String[] args) throws MqttException, InterruptedException, BrokenBarrierException {
-		int NUMERO_THREADS=5;
 		final CyclicBarrier gate = new CyclicBarrier(NUMERO_THREADS);
 		for(int i=0; i < NUMERO_THREADS; i++){
 			ThreadTester t = new ThreadTester();
