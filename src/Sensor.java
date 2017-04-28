@@ -1,5 +1,4 @@
 public class Sensor {
-	private int idpassagem;
 	private String datapassagem = new String();
 	private String horapassagem = new String();
 	private String evento = new String();
@@ -11,10 +10,6 @@ public class Sensor {
 		this.horapassagem=horapassagem;
 		this.sensorInOut=sensorInOut;
 	};
-	
-	public int getIdpassagem() {
-		return idpassagem;
-	}
 
 	public String getDatapassagem() {
 		return datapassagem;
