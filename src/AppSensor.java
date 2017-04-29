@@ -141,16 +141,11 @@ public class AppSensor implements MqttCallback{
 	public void insertIntoMongoDB(String topic, MqttMessage message){
 		String messageString = message.toString();
 		System.out.println(messageString);
-        messageString = messageString.substring(0, messageString.length() - 1);
-        if(topicsMap.get(topic).equals("IN")){
-        	messageString += (", \"sensor\" : \"IN\" }");
-        } else if(topicsMap.get(topic).equals("OUT")){
-        	messageString += (", \"sensor\" : \"OUT\" }");
-        }
-        
-        	Document dbObject = Document.parse(messageString);
-            collection.insertOne(dbObject);
-            exportEngine.executeExport();
+		messageString = messageString.substring(0, messageString.length() - 1);
+		messageString += (", \"sensor\" : \""+topicsMap.get(topic)+"\" }");
+		Document dbObject = Document.parse(messageString);
+		collection.insertOne(dbObject);
+		exportEngine.executeExport();
 	}
 	
 	
