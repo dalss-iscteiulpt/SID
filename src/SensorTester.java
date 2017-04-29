@@ -1,4 +1,5 @@
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Scanner;
 
 import javax.swing.plaf.synth.SynthSpinnerUI;
@@ -9,11 +10,12 @@ public class SensorTester {
 
 	
 	public static void main(String[] args) throws MqttException, InterruptedException, SQLException {
+		HashMap<String, String> topics = new HashMap<>();
+		topics.put("iscte_sid_2016_S4", "IN");
+		topics.put("iscte_sid_2016_S5", "OUT");
 		ExportToSybase exporter = new ExportToSybase();
-		AppSensor senIN  = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientIN_69178", "iscte_sid_2016_S4", "IN", exporter);
-		AppSensor senOUT = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientOUT_69178", "iscte_sid_2016_S5", "OUT", exporter);	
-		senOUT.start();
-		senIN.start();
+		AppSensor sensor  = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientIN_69178", exporter, topics);	
+		sensor.start();
 		
 		boolean stop = false;
 		
@@ -25,8 +27,7 @@ public class SensorTester {
 		     }
 		}
 		
-		senOUT.closeConnections();
-		senIN.closeConnections();
+		sensor.closeConnections();
 		exporter.closeConnections();
 		
 	}	

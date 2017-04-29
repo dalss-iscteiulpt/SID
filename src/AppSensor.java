@@ -1,3 +1,5 @@
+import java.util.HashMap;
+
 import org.bson.Document;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -20,8 +22,6 @@ public class AppSensor implements MqttCallback{
 	
 	//object that provides the services
 	private MqttClient client;
-	//topic to subscribe
-	private String topic;
 	//quality of the service (0, not reliable; 1, retries once; 2, keeps trying until)
 	private int qos = 0;
 	//server's address
@@ -42,7 +42,6 @@ public class AppSensor implements MqttCallback{
 	 */
 	private int MAX_RECONNECT_ATTEMPTS = 5;
 	
-	private String sensorName;
 	private boolean connectedToMQTT;
 	private boolean connectedToMongoDB;
 	
@@ -51,6 +50,8 @@ public class AppSensor implements MqttCallback{
 	 */
 	
 	private ExportToSybase exportEngine;
+	
+	private HashMap<String, String> topicsMap;
 	
 	/**
 	 * 
@@ -61,12 +62,11 @@ public class AppSensor implements MqttCallback{
 	 * @param exportEngine 		Exportador mongoDB -> Sybase
 	 *
 	 */
-	public AppSensor(String mqttAddress, String clientId, String topic, String nomeSensor, ExportToSybase exportEngine) { 
+	public AppSensor(String mqttAddress, String clientId, ExportToSybase exportEngine, HashMap<String, String> topics) { 
 		this.mqttAdress=mqttAddress;
 		this.clientId=clientId;
-		this.topic=topic;
-		this.sensorName=nomeSensor;
 		this.exportEngine=exportEngine;
+		this.topicsMap=topics;
 	}
 	
 	
@@ -109,7 +109,8 @@ public class AppSensor implements MqttCallback{
 		client = new MqttClient(mqttAdress, clientId, new MemoryPersistence());
 		client.connect();
 		client.setCallback(this);
-		client.subscribe(topic);
+		String[] topicsToSub = topicsMap.keySet().toArray(new String[topicsMap.keySet().size()]);
+		client.subscribe(topicsToSub);
 	}
 
 	/**
@@ -127,7 +128,7 @@ public class AppSensor implements MqttCallback{
 	@Override
 	public void messageArrived(String topic, MqttMessage message) throws Exception {
 		try{
-	        insertIntoMongoDB(message);
+	        insertIntoMongoDB(topic,message);
 		}catch(Exception e){
 	         System.err.println( e.getClass().getName() + ": " + e.getMessage() );
 	      }
@@ -137,13 +138,13 @@ public class AppSensor implements MqttCallback{
 	 *The message is added to MongoDB.
 	 *Note: The type of the sensor is related to the topic subscribed on the MQTT server. Each of the sensors subscribes a different topic.
 	 */
-	public void insertIntoMongoDB(MqttMessage message){
+	public void insertIntoMongoDB(String topic, MqttMessage message){
 		String messageString = message.toString();
 		System.out.println(messageString);
         messageString = messageString.substring(0, messageString.length() - 1);
-        if(sensorName.equals("IN")){
+        if(topicsMap.get(topic).equals("IN")){
         	messageString += (", \"sensor\" : \"IN\" }");
-        } else if(sensorName.equals("OUT")){
+        } else if(topicsMap.get(topic).equals("OUT")){
         	messageString += (", \"sensor\" : \"OUT\" }");
         }
         
