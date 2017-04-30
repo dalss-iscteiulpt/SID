@@ -14,6 +14,7 @@ public class SensorTester {
 		topics.put("iscte_sid_2016_S4", "IN");
 		topics.put("iscte_sid_2016_S5", "OUT");
 		ExportToSybase exporter = new ExportToSybase();
+		exporter.start();
 		AppSensor sensor  = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientIN_69178", exporter, topics);	
 		sensor.start();
 		

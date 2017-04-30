@@ -43,7 +43,10 @@ public class ExportToSybase implements Runnable{
 	 * Starts the exporter
 	 * @throws InterruptedException 
 	 */
-	public ExportToSybase() throws InterruptedException{
+	public ExportToSybase() {
+	}
+	
+	public void start() throws InterruptedException{
 		connectToMongo();
 		connectToSybase();
 		dispatcher = Executors.newSingleThreadExecutor();
