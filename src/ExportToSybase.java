@@ -103,14 +103,21 @@ public class ExportToSybase implements Runnable{
 			if(sqlCommand != ""){
 				Integer result = new Integer(sybaseStatement.executeUpdate(sqlCommand));
 				System.out.println("Sent");
+				collection.deleteOne(new Document("_id", new ObjectId(item.get("_id").toString())));
 			}
 		}catch(NullPointerException e1){
 			System.out.println("Wrong format.");
+			collection.deleteOne(new Document("_id", new ObjectId(item.get("_id").toString())));
+		}catch(SQLException sqlE){
+			if(sqlE.getErrorCode() == -195){
+			} else {
+				throw new SQLException("Disconnected","Down Sybase",-85);
+			}
 		}
 
 
 		//Delete item from mongoDB
-		collection.deleteOne(new Document("_id", new ObjectId(item.get("_id").toString())));
+		
 	}
 
 
@@ -120,7 +127,6 @@ public class ExportToSybase implements Runnable{
 	@Override
 	public void run() {
 		FindIterable<Document> search = collection.find();
-
 		int nrRetries=0;
 		while(nrRetries  < MAX_PULL_ATTEMPTS){	
 			try{
@@ -130,9 +136,15 @@ public class ExportToSybase implements Runnable{
 				break;
 			}catch (SQLException sqlE) {
 					try {
-						System.out.println("Sybase Error. Trying to reconnect");
-						connectToSybase();
-						nrRetries++;
+						System.out.println(sqlE.getErrorCode());
+						if(sqlE.getErrorCode() == -85){
+							System.out.println("Sybase Error. Trying to reconnect");
+							connectToSybase();
+							nrRetries++;
+						} else {
+							break;
+						}
+						
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}

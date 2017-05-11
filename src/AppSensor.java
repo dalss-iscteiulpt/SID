@@ -23,7 +23,6 @@ public class AppSensor implements MqttCallback{
 	//object that provides the services
 	private MqttClient client;
 	//quality of the service (0, not reliable; 1, retries once; 2, keeps trying until)
-	private int qos = 0;
 	//server's address
 	private String mqttAdress;
 	//id to identify the client that is connecting
