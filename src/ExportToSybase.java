@@ -103,21 +103,21 @@ public class ExportToSybase implements Runnable{
 			if(sqlCommand != ""){
 				Integer result = new Integer(sybaseStatement.executeUpdate(sqlCommand));
 				System.out.println("Sent");
-				collection.deleteOne(new Document("_id", new ObjectId(item.get("_id").toString())));
+				deleteFromMongo(item);
 			}
 		}catch(NullPointerException e1){
 			System.out.println("Wrong format.");
-			collection.deleteOne(new Document("_id", new ObjectId(item.get("_id").toString())));
+			deleteFromMongo(item);
 		}catch(SQLException sqlE){
 			if(sqlE.getErrorCode() == -195){
 			} else {
 				throw new SQLException("Disconnected","Down Sybase",-85);
 			}
-		}
-
-
-		//Delete item from mongoDB
-		
+		}	
+	}
+	
+	public void deleteFromMongo(Document item){
+		collection.deleteOne(new Document("_id", new ObjectId(item.get("_id").toString())));
 	}
 
 
