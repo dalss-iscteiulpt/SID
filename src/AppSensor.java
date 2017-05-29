@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.HashMap;
 
 import org.bson.Document;
@@ -9,6 +10,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import com.mongodb.MongoClient;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
@@ -95,7 +97,10 @@ public class AppSensor implements MqttCallback{
 	 * Sets the connection to mongoDB
 	 */
 	private void connectToMongo(){
-		mongoClient = new MongoClient("localhost",27017);
+		mongoClient = new MongoClient(Arrays.asList(
+				   new ServerAddress("192.168.1.101", 27017),
+				   new ServerAddress("192.168.248.130", 27017),
+				   new ServerAddress("192.168.248.130", 27018)));
 		database = mongoClient.getDatabase("SensorLog");
 		collection = database.getCollection("SensorLogColl");
 	}
