@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -29,6 +30,8 @@ public class AppSensor implements MqttCallback{
 	private String mqttAdress;
 	//id to identify the client that is connecting
 	private String clientId;
+	private ArrayList<String> waitingData = new ArrayList<>();
+	private boolean failing = false;
 	
     
 	/**
@@ -133,6 +136,7 @@ public class AppSensor implements MqttCallback{
 	public void messageArrived(String topic, MqttMessage message) throws Exception {
 		try{
 	        insertIntoMongoDB(topic,message);
+	   
 		}catch(Exception e){
 	         System.err.println( e.getClass().getName() + ": " + e.getMessage() );
 	      }
@@ -146,11 +150,15 @@ public class AppSensor implements MqttCallback{
 		String messageString = message.toString();
 		System.out.println(messageString);
 		Document dbObject = Document.parse(messageString);
+
 		dbObject.append("sensor", topicsMap.get(topic));
+
 		collection.insertOne(dbObject);
+
 		exportEngine.executeExport();
+
 	}
-	
+
 	
 	/**
 	 * Mandatory by the MqttCallback Interface. Not used.   
