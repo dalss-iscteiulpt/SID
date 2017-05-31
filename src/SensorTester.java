@@ -11,11 +11,11 @@ public class SensorTester {
 	
 	public static void main(String[] args) throws MqttException, InterruptedException, SQLException {
 		HashMap<String, String> topics = new HashMap<>();
-		topics.put("iscte_sid_2016_S4", "IN");
-		topics.put("iscte_sid_2016_S5", "OUT");
+		topics.put("iscte_sid_2016_S68", "IN");
+		topics.put("iscte_sid_2016_S69", "OUT");
 		ExportToSybase exporter = new ExportToSybase();
 		exporter.start();
-		AppSensor sensor  = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClientIN_69178", exporter, topics);	
+		AppSensor sensor  = new AppSensor("tcp://iot.eclipse.org:1883", "eclipseClient_69178", exporter, topics);	
 		sensor.start();
 		
 		boolean stop = false;

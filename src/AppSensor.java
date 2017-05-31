@@ -1,4 +1,5 @@
 import java.util.HashMap;
+import java.util.LinkedList;
 
 import org.bson.Document;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -27,6 +28,8 @@ public class AppSensor implements MqttCallback{
 	private String mqttAdress;
 	//id to identify the client that is connecting
 	private String clientId;
+	
+	private LinkedList<Document> arrivedData = new LinkedList<>();
 	
     
 	/**
@@ -126,6 +129,7 @@ public class AppSensor implements MqttCallback{
 	 */
 	@Override
 	public void messageArrived(String topic, MqttMessage message) throws Exception {
+		checkList();
 		try{
 	        insertIntoMongoDB(topic,message);
 		}catch(Exception e){
@@ -142,8 +146,21 @@ public class AppSensor implements MqttCallback{
 		System.out.println(messageString);
 		Document dbObject = Document.parse(messageString);
 		dbObject.append("sensor", topicsMap.get(topic));
+		
+		arrivedData.add(dbObject);
 		collection.insertOne(dbObject);
+		arrivedData.remove(dbObject);
+		
 		exportEngine.executeExport();
+	}
+	
+	public void checkList(){
+		if(!arrivedData.isEmpty()){
+			for(Document data : arrivedData){
+				collection.insertOne(data);
+				arrivedData.remove(data);
+			}	
+		}
 	}
 	
 	
